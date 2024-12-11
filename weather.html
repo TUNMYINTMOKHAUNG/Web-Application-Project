@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country AQI and Temperature</title>
+    <link rel="stylesheet" href="weather.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Search AQI and Temperature</h1>
+            <div class="search-bar">
+                <input type="text" id="country-search" placeholder="Enter country name" />
+                <button id="update-button">Search</button>
+            </div>
+        </header>
+
+        <div class="chart-container">
+            <h3>AQI INDEX & TEMP</h3>
+            <canvas id="temp-aqi-chart"></canvas>
+        </div>
+    </div>
+
+    <div id="aqiIndex">
+        <h2>AQI Index</h2>
+        <table style="margin: 0 auto; border-collapse: collapse; text-align: center; color: #ffffff;">
+            <thead>
+                <tr>
+                    <th style="padding: 8px 16px; background-color: #00e400;">1</th>
+                    <th style="padding: 8px 16px; background-color: #ffff00;">2</th>
+                    <th style="padding: 8px 16px; background-color: #ff7e00;">3</th>
+                    <th style="padding: 8px 16px; background-color: #ff0000;">4</th>
+                    <th style="padding: 8px 16px; background-color: #8f3f97;">5</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px 16px;">Very Good</td>
+                    <td style="padding: 8px 16px;">Good</td>
+                    <td style="padding: 8px 16px;">Moderate</td>
+                    <td style="padding: 8px 16px;">Poor</td>
+                    <td style="padding: 8px 16px;">Very Poor</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById('update-button').addEventListener('click', async () => {
+            const country = document.getElementById('country-search').value.trim();
+            if (!country) {
+                alert("Please enter a valid country.");
+                return;
+            }
+
+           
+            await initializeAqiTempChart(country);
+        });
+
+        async function initializeAqiTempChart(country) {
+            const ctx = document.getElementById('temp-aqi-chart').getContext('2d');
+            
+           
+            const result = await fetchAqiAndTemp(country);
+            if (!result) return;
+
+            const { temperature, aqi } = result;
+
+    
+            if (window.currentChart) {
+                window.currentChart.destroy();
+            }
+
+            window.currentChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: `AQI vs Temperature in ${country}`,
+                            data: [{ x: temperature, y: aqi }],
+                            backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true },
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)',
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'AQI',
+                            },
+                            beginAtZero: true,
+                        },
+                    },
+                },
+            });
+        }
+
+        async function fetchAqiAndTemp(city) {
+            try {
+                const API_KEY = "cb9db9e221dac5a5d1e73e1029de106d"; 
+
+                const geocodingResponse = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
+                const geoData = await geocodingResponse.json();
+                if (!geoData || geoData.length === 0) {
+                    alert('City not found. Please try again.');
+                    return null;
+                }
+
+                const { lat, lon } = geoData[0];
+
+                const airPollutionResponse = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
+                const airPollutionData = await airPollutionResponse.json();
+
+                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+                const weatherData = await weatherResponse.json();
+
+                const temperature = weatherData.main.temp;
+                const aqi = airPollutionData.list[0].main.aqi;
+
+                return { temperature, aqi };
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Failed to fetch AQI and temperature data.');
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>

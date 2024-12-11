@@ -1,0 +1,72 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+</head>
+<body>
+  <header class="header">
+    <div class="location">AIR QUALITY MONITORING DASHBOARD</div>
+      <div class="theme-toggle">
+      <button class="theme-light">☀</button>
+      <button class="theme-dark">🌙</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <h2>Menu</h2>
+      <ul>
+          <li class="sidebar-group">
+          <h3>Weather Info</h3>
+          <ul>
+            <li><a href="today-weather.html"><i class="wi wi-day-sunny"></i> TODAY'S WEATHER</a></li>
+            <li><a href="weekly-forecast.html"><i class="wi wi-cloudy"></i> WEEKLY FORECAST</a></li>
+          </ul>
+        </li>
+       
+        <li class="sidebar-group">
+          <h3>AQI Overview</h3>
+          <ul>
+            <li><a href="month.html"><i class="wi wi-smog"></i> 30-DAY AQI CHART</a></li>
+
+            <li><a href="weather.html"><i class="wi wi-thermometer"></i> AQI INDEX & TEMP</a></li>
+            
+           
+          </ul>
+        </li>
+    </div>
+
+
+<section class="global-map">
+  <h2>Global Map</h2>
+  <div id="map" style="height: 500px; width: 900px;"></div> 
+  
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
+  
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    
+    var map = L.map('map').setView([0, 0], 2);  
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  </script>
+</section>
+</div>
+
+  <footer>
+    <p>© 2024 Weather Dashboard. All rights reserved.</p>
+  </footer>
+</div>
+  <script src="script.js"></script>
+ 
+</body>
+</html>

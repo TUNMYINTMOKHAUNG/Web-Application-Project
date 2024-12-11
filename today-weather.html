@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Today's Weather</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+</head>
+<body>
+  <header class="header">
+    <div class="location">TODAY'S WEATHER</div>
+  
+    <input type="text" class="search-bar" placeholder="Search city...">
+    <div class="theme-toggle">
+      <button class="theme-light">☀</button>
+      <button class="theme-dark">🌙</button>
+    </div>
+  </header>
+
+
+  <main class="main-content">
+       <section class="today-weather">
+      <div class="temp-info">
+        <i class="wi wi-day-sunny weather-icon"></i> 
+              
+        <div class="temp"></div>
+        <div class="details">
+          <p>Temperature : C</p>
+          <p>Humidity: %</p>
+          <p>PM2.5 : µg/m³</p>
+          <p>PM10  : µg/m³</p>
+          <p>NOx   : ppb</p>
+          <p>NH3 : ppb</p>
+          <p>CO2 : ppm</p>
+          <p>SO2 : ppb</p>
+          <p>VOC: ppb</p>
+        </div>
+      </div>
+      
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2024 Weather Dashboard. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    
+    const API_KEY = "cb9db9e221dac5a5d1e73e1029de106d"; 
+  
+       async function fetchWeatherData(city) {
+      try {
+        const geocodingResponse = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
+        const geoData = await geocodingResponse.json();
+        if (!geoData.length) {
+          alert("City not found. Please try again.");
+          return;
+        }
+  
+        const { lat, lon } = geoData[0];
+  
+        const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
+        const airPollutionResponse = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
+  
+        const weatherData = await weatherResponse.json();
+        const airQualityData = await airPollutionResponse.json();
+  
+        displayWeatherData(weatherData, airQualityData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+  
+
+    function displayWeatherData(weatherData, airQualityData) {
+      const locationElement = document.querySelector(".location");
+      const mainContent = document.querySelector(".main-content");
+  
+      const { name, main, weather } = weatherData;
+      const airQuality = airQualityData.list[0].main.aqi;
+  
+      locationElement.textContent = `${name}, ${weatherData.sys.country}`;
+      mainContent.innerHTML = `
+        <section class="today-weather">
+          <div class="temp-info">
+  <i class="wi wi-day-sunny weather-icon"></i>
+  <i class="wi wi-day-rain weather-icon"></i>
+  <i class="wi wi-day-cloudy weather-icon"></i>
+  <i class="wi wi-snow weather-icon"></i>
+</div>
+
+            <div class="temp">${main.temp}°C</div>
+            <div class="details">
+              <p>Temperature : ${main.temp}°C</p>
+              <p>Humidity: ${main.humidity}%</p>
+              <p>PM2.5 : ${airQualityData.list[0].components.pm2_5} µg/m³</p>
+              <p>PM10 : ${airQualityData.list[0].components.pm10} µg/m³</p>
+              <p>NOx : ${airQualityData.list[0].components.nox} ppb</p>
+              <p>NH3 : ${airQualityData.list[0].components.nh3} ppb</p>
+              <p>CO2 : ${airQualityData.list[0].components.co2} ppm</p>
+              <p>SO2 : ${airQualityData.list[0].components.so2} ppb</p>
+              <p>VOC: ${airQualityData.list[0].components.voc} ppb</p>
+            </div>
+          </div>
+          
+        </section>
+      `;
+    }
+  
+      document.querySelector(".search-bar").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        const city = e.target.value;
+        if (city) {
+          fetchWeatherData(city);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

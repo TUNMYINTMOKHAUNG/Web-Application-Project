@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Forecast</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="location">Weather Dashboard</div>
+        <input type="text" class="search-bar" placeholder="Search city...">
+        <div class="theme-toggle">
+            <button class="theme-light">☀</button>
+            <button class="theme-dark">🌙</button>
+          </div>
+          
+      </header>
+    
+      <main>
+        <section class="forecast">
+          <h2>5-Day Forecast</h2>
+          <div class="forecast-days" id="forecast-days"></div>
+        </section>
+      </main>
+    
+      <footer>
+        <p>© 2024 Weather Dashboard. All rights reserved.</p>
+      </footer>
+    
+      <script>
+        const API_KEY = "cb9db9e221dac5a5d1e73e1029de106d"; 
+    
+        async function fetchWeather(city) {
+          try {
+            const geoResponse = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
+            const geoData = await geoResponse.json();
+    
+            if (!geoData.length) {
+              alert("City not found. Please try again.");
+              return;
+            }
+    
+            const { lat, lon } = geoData[0];
+    
+            const forecastResponse = await fetch(
+              `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+            );
+            const forecastData = await forecastResponse.json();
+    
+            displayForecast(processForecastData(forecastData.list));
+          } catch (error) {
+            console.error("Error fetching weather data:", error);
+            alert("Unable to fetch weather data. Please try again later.");
+          }
+        }
+    
+        function processForecastData(data) {
+  const dailyData = {};
+
+  data.forEach((entry) => {
+    const date = entry.dt_txt.split(" ")[0]; 
+    if (!dailyData[date]) {
+      dailyData[date] = [];
+    }
+    dailyData[date].push(entry);
+  });
+
+  return Object.keys(dailyData).slice(0, 5).map((date) => {
+    const dayData = dailyData[date];
+    const temps = dayData.map((entry) => entry.main.temp);
+    const weatherConditions = dayData.map((entry) => entry.weather[0].main);
+
+    return {
+      date,
+      tempMin: Math.min(...temps).toFixed(1), 
+      tempMax: Math.max(...temps).toFixed(1), 
+      weather: weatherConditions[0], 
+    };
+  });
+}
+
+function displayForecast(forecast) {
+  const forecastDaysElement = document.getElementById("forecast-days");
+  forecastDaysElement.innerHTML = ""; 
+
+  forecast.forEach((day) => {
+    const date = new Date(day.date);
+    const dayName = date.toLocaleString("en-US", { weekday: "short" });
+
+    const dayElement = document.createElement("div");
+    dayElement.classList.add("day");
+
+    const iconClass = getWeatherIcon(day.weather);
+
+    dayElement.innerHTML = `
+      <p>${dayName}</p>
+      <i class="wi ${iconClass} weather-icon"></i>
+      <p>High: ${day.tempMax}°C</p>
+      <p>Low: ${day.tempMin}°C</p>
+    `;
+
+    forecastDaysElement.appendChild(dayElement);
+  });
+}
+
+        function getWeatherIcon(condition) {
+          switch (condition) {
+            case "Clear":
+              return "wi-day-sunny";
+            case "Clouds":
+              return "wi-cloudy";
+            case "Rain":
+              return "wi-rain";
+            case "Thunderstorm":
+              return "wi-thunderstorm";
+            case "Snow":
+              return "wi-snow";
+            default:
+              return "wi-na"; 
+          }
+        }
+    
+        document.querySelector(".search-bar").addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            const city = event.target.value.trim();
+            if (city) fetchWeather(city);
+          }
+        });
+    
+        
+      </script>
+    </body>
+    </html>

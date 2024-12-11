@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30-Day AQI Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #b2c6d6;
+            color: #ffffff;
+        }
+        canvas {
+            max-width: 90%;
+            height: 500px;
+            margin: 40px auto;
+            background-color: #9dbad6;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+        #city {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #9dbad6;
+            color: #ffffff;
+        }
+        #fetchDataBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #9dbad6;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #fetchDataBtn:hover {
+            background-color: #6e9ecc;
+        }
+    </style>
+</head>
+<body>
+    <h1>30-Day AQI Chart</h1>
+    <p>Enter your city to view the AQI trend for the last 30 days.</p>
+
+    <label for="city">City:</label>
+    <input type="text" id="city" placeholder="Enter city name">
+    <button id="fetchDataBtn">Fetch Data</button>
+
+    <canvas id="aqiChart"></canvas>
+
+    <div id="aqiIndex">
+        <h2>AQI Index</h2>
+        <table style="margin: 0 auto; border-collapse: collapse; text-align: center; color: #ffffff;">
+            <thead>
+                <tr>
+                    <th style="padding: 8px 16px; background-color: #00e400;">1</th>
+                    <th style="padding: 8px 16px; background-color: #ffff00;">2</th>
+                    <th style="padding: 8px 16px; background-color: #ff7e00;">3</th>
+                    <th style="padding: 8px 16px; background-color: #ff0000;">4</th>
+                    <th style="padding: 8px 16px; background-color: #8f3f97;">5</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px 16px;">Very Good</td>
+                    <td style="padding: 8px 16px;">Good</td>
+                    <td style="padding: 8px 16px;">Moderate</td>
+                    <td style="padding: 8px 16px;">Poor</td>
+                    <td style="padding: 8px 16px;">Very Poor</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiKey = 'cb9db9e221dac5a5d1e73e1029de106d'; 
+        let aqiChartInstance; 
+    
+        async function getCoordinates(city) {
+            const geoApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
+            try {
+                const response = await fetch(geoApiUrl);
+                const data = await response.json();
+                if (data.length === 0) {
+                    alert("City not found. Please enter a valid city name.");
+                    return null;
+                }
+                return { lat: data[0].lat, lon: data[0].lon };
+            } catch (error) {
+                console.error("Error fetching coordinates:", error);
+                return null;
+            }
+        }
+    
+        async function fetchDailyAQIData(lat, lon, date) {
+            const apiUrl = `http://api.openweathermap.org/data/2.5/air_pollution/history?lat=${lat}&lon=${lon}&start=${date}&end=${date + 86400}&appid=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                if (!data.list || data.list.length === 0) return null;
+                const sum = data.list.reduce((acc, entry) => acc + entry.main.aqi, 0);
+                return sum / data.list.length; 
+            } catch (error) {
+                console.error(`Error fetching AQI data for date ${date}:`, error);
+                return null;
+            }
+        }
+    
+        async function fetchAQIData(city) {
+            const coordinates = await getCoordinates(city);
+            if (!coordinates) return null;
+    
+            const { lat, lon } = coordinates;
+            const currentDate = new Date();
+            const results = [];
+    
+            for (let i = 0; i < 30; i++) {
+                const unixDate = Math.floor(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i).getTime() / 1000);
+                const averageAQI = await fetchDailyAQIData(lat, lon, unixDate);
+                results.push({
+                    date: new Date(unixDate * 1000).toLocaleDateString(),
+                    average: averageAQI !== null ? averageAQI.toFixed(2) : null,
+                });
+            }
+    
+            return results.reverse(); 
+        }
+    
+        function createChart(data) {
+            const ctx = document.getElementById('aqiChart').getContext('2d');
+            
+           
+            if (aqiChartInstance) {
+                aqiChartInstance.destroy();
+            }
+    
+            const labels = data.map(d => d.date);
+            const values = data.map(d => d.average);
+    
+            aqiChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Average AQI',
+                            data: values,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 4,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'AQI',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                callback: function(value, index, values) {
+                                    return index % 3 === 0 ? this.getLabelForValue(value) : '';
+                                }
+                            }
+                        },
+                    },
+                },
+            });
+        }
+    
+        document.getElementById('fetchDataBtn').addEventListener('click', async () => {
+            const city = document.getElementById('city').value;
+            if (!city) {
+                alert("Please enter a city name.");
+                return;
+            }
+    
+            const data = await fetchAQIData(city);
+            if (data) createChart(data);
+        });
+    </script>
+    
+</body>
+</html>
